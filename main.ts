@@ -1,4 +1,5 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { CustomSidebarView, VIEW_TYPE_CUSTOM_SIDEBAR } from "./SidebarView"
 
 // Remember to rename these classes and interfaces!
 
@@ -76,6 +77,17 @@ export default class MyPlugin extends Plugin {
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+
+		this.registerView(
+			VIEW_TYPE_CUSTOM_SIDEBAR,
+			(leaf) => new CustomSidebarView(leaf)
+		);
+
+		this.app.workspace.getRightLeaf(false).setViewState({
+			type: VIEW_TYPE_CUSTOM_SIDEBAR,
+			active: true,
+		});
+
 	}
 
 	onunload() {
