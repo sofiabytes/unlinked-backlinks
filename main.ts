@@ -34,9 +34,19 @@ export default class MyPlugin extends Plugin {
 			(leaf) => new CustomSidebarView(leaf)
 		);
 
-		this.app.workspace.getRightLeaf(false).setViewState({
-			type: VIEW_TYPE_CUSTOM_SIDEBAR,
-			active: true,
+//		this.app.workspace.getRightLeaf(false).setViewState({
+//			type: VIEW_TYPE_CUSTOM_SIDEBAR,
+//			active: true,
+//		});
+
+		this.app.workspace.onLayoutReady(() => {
+		    const leaf = this.app.workspace.getRightLeaf(false);
+			if (leaf) {
+				leaf.setViewState({
+					type: VIEW_TYPE_CUSTOM_SIDEBAR,
+					active: true
+				});
+			}
 		});
 
 	}

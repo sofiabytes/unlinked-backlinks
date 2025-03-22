@@ -43,7 +43,7 @@ export class CustomSidebarView extends ItemView {
 
 		const incoming = this.getIncomingLinksv2(activeFile);
 		console.log("Incoming Links:", incoming);
-		const outgoing = this.getOutgoingLinks(activeFile);
+		const outgoing = this.getOutgoingLinksv2(activeFile);
 		console.log("Outgoing Links:", outgoing);
 		const filtered = this.filterIncomingLinks(incoming, outgoing);
 		console.log("filtered links: ", filtered)
@@ -53,14 +53,19 @@ export class CustomSidebarView extends ItemView {
 		} else {
 			const list = container.createEl("ul");
 			filtered.forEach((file) => {
+				console.log("creating link...")
 				const listItem = list.createEl("li");
 				const link = listItem.createEl("a", {
 					text: file.baseName,
-					href: file.filePath,
+					href: "#"
+					//href: file.filePath.replace(/\.md$/, ""),
 				});
+				link.classList.add("internal-link");
+				link.dataset.href = file.filePath.replace(/\.md$/, ""); // Required for Obsidian's internal linking
+
 				link.onclick = (event) => {
 					event.preventDefault();
-					this.app.workspace.openLinkText(file.path, "", true);
+					this.app.workspace.openLinkText(file.filePath.replace(/\.ms$/, ""), "", true);
 				};
 			});
 		}
@@ -136,9 +141,9 @@ export class CustomSidebarView extends ItemView {
 
 				const isLinkingToActiveFile = normalizedLinks.includes(activeFilePath) ||
 					normalizedLinks.includes(activeFileName + '.md');
-				
+				const cleanedLink = file.path.replace(/\.md$/, "");
 		        if (isLinkingToActiveFile) {
-			        return { filePath: file.path, baseName: file.basename, links: normalizedLinks };
+			        return { filePath: cleanedLink, baseName: file.basename, links: normalizedLinks };
 				}
 				return null;
 		})
@@ -181,10 +186,43 @@ export class CustomSidebarView extends ItemView {
 		return normalizedLinks.map((link) => {
 			const linkedFile = app.vault.getAbstractFileByPath(link);
 			return linkedFile && linkedFile instanceof TFile
-				? { filePath: linkedFile.path, baseName: linkedFile.basename, links: [activeFile.path] }
+				? { filePath: linkedFile.path.replace(/\.md$/, ""), baseName: linkedFile.basename, links: [activeFile.path] }
 				: null;
 		}).filter(Boolean) as { filePath: string; links: string[] }[];
 	}
+
+
+
+
+
+	getOutgoingLinksv2(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
+	    if (!activeFile) return [];
+
+		const metadata = app.metadataCache.getFileCache(activeFile);
+		if (!metadata) return [];
+	
+		// Get all outgoing links
+		const links = metadata.links?.map((link) => link.link) || [];
+
+		return links
+			.map((rawLink) => {
+				let fullPath = rawLink.endsWith(".md") ? rawLink : rawLink + ".md";
+
+	            // Try to resolve relative links using Obsidian's metadataCache
+		        const linkedFile = app.metadataCache.getFirstLinkpathDest(rawLink, activeFile.path);
+	
+		        if (linkedFile) {
+			        fullPath = linkedFile.path; // Use the correct full path
+				}
+
+	            return linkedFile
+		            ? { filePath: fullPath.replace(/\.md$/, ""), baseName: linkedFile.basename, links: [activeFile.path] }
+			        : null;
+			})
+			.filter(Boolean) as { filePath: string; baseName: string; links: string[] }[];
+	}
+
+
 
 
 
