@@ -69,16 +69,6 @@ export class CustomSidebarView extends ItemView {
 				};
 			});
 		}
-//		container.createEl("p", {text: "testing here"})
-//		const linkz = this.getIncomingLinks(activeFile)
-//		linkz.forEach((link) =>{
-//			container.createEl("p", {text: `${link.source}, links` });
-//		})
-//		container.createEl("p", {text: "testing2 here"})
-//		const linkz = this.getOutgoingLinks(activeFile)
-//		linkz.forEach((link) =>{
-//			container.createEl("p", {text: `${link.source}, links` });
-//		})
 	}
 
 	// Function to get backlinks and filter out ones with outgoing links
@@ -90,11 +80,6 @@ export class CustomSidebarView extends ItemView {
 			return links;//.includes(activeFile.path);// && links.length === 1;
 		});
 	}
-
-
-
-
-
 
 	getIncomingLinks(activeFile: TFile): { source: TFile; links: string[] }[] {
 		if (!activeFile) return [];
@@ -132,10 +117,15 @@ export class CustomSidebarView extends ItemView {
 	        .map((file) => {
 			    const metadata = app.metadataCache.getFileCache(file);
 				if (!metadata) return null;
-				const links = metadata.links?.map((link) => link.link) || [];
-            
+				const bodyLinks = metadata.links?.map((link) => link.link) || [];
+				// Get links from the frontmatter
+				const frontmatterLinks = metadata.frontmatterLinks?.map((link) => link.link) || [];
+
+				// Combine both sets of links
+				const allLinks = [...frontmatterLinks, ...bodyLinks];
+
 	            // Normalize links: Check if the link matches the active file by full path or just filename
-		        const normalizedLinks = links.map((link) =>
+		        const normalizedLinks = allLinks.map((link) =>
 			        link.endsWith('.md') ? link : link + '.md'
 				);
 
@@ -149,23 +139,6 @@ export class CustomSidebarView extends ItemView {
 		})
         .filter(Boolean) as { filePath: string; links: string[] }[];
 	}
-
-
-
-
-
-
-
-//	getOutgoingLinks(activeFile: TFile): string[] {
-//		if (!activeFile) return [];
-//
-//		const metadata = app.metadataCache.getFileCache(activeFile);
-//		if (!metadata) return [];
-//
-//		// Get all outgoing links
-//		return metadata.links?.map((link) => link.link) || [];
-//	}
-
 
 
 	getOutgoingLinks(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
@@ -191,10 +164,6 @@ export class CustomSidebarView extends ItemView {
 		}).filter(Boolean) as { filePath: string; links: string[] }[];
 	}
 
-
-
-
-
 	getOutgoingLinksv2(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
 	    if (!activeFile) return [];
 
@@ -202,9 +171,20 @@ export class CustomSidebarView extends ItemView {
 		if (!metadata) return [];
 	
 		// Get all outgoing links
-		const links = metadata.links?.map((link) => link.link) || [];
+		//const links = metadata.links?.map((link) => link.link) || [];
 
-		return links
+		// Get links from the frontmatter
+		const frontmatterLinks = metadata.frontmatterLinks?.map((link) => link.link) || [];
+		//console.log("metadata")
+		//console.log(metadata.frontmatterLinks)
+	
+		// Get links from the body of the file
+		const bodyLinks = metadata.links?.map((link) => link.link) || [];
+
+		// Combine both sets of links
+		const allLinks = [...frontmatterLinks, ...bodyLinks];
+
+		return allLinks
 			.map((rawLink) => {
 				let fullPath = rawLink.endsWith(".md") ? rawLink : rawLink + ".md";
 
@@ -222,10 +202,6 @@ export class CustomSidebarView extends ItemView {
 			.filter(Boolean) as { filePath: string; baseName: string; links: string[] }[];
 	}
 
-
-
-
-
 	filterIncomingLinks(incomingLinks: { filePath: string; baseName: string, links: string[] }[], outgoingLinks: { filePath: string; baseName: string, links: string[] }[]): { filePath: string; baseName: string, links: string[] }[] {
 		// Get a set of file paths from the outgoing links to easily check if incoming links are outgoing
 		const outgoingFilePaths = new Set(outgoingLinks.map(link => link.filePath));
@@ -233,10 +209,6 @@ export class CustomSidebarView extends ItemView {
 		// Filter out incoming links whose filePath is in the outgoingFilePaths set
 		return incomingLinks.filter(incoming => !outgoingFilePaths.has(incoming.filePath));
 	}
-
-
-
-
 
 }
 
