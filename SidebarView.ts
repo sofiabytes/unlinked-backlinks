@@ -41,9 +41,7 @@ export class CustomSidebarView extends ItemView {
 		// Display the name of the current note
 		container.createEl("h3", { text: `Backlinks for ${activeFile.basename}` });
 
-		//this.printLinks(activeFile);
-		//console.log("test")
-		const incoming = this.getIncomingLinks(activeFile);
+		const incoming = this.getIncomingLinksv2(activeFile);
 		console.log("Incoming Links:", incoming);
 		const outgoing = this.getOutgoingLinks(activeFile);
 		console.log("Outgoing Links:", outgoing);
@@ -95,10 +93,8 @@ export class CustomSidebarView extends ItemView {
 
 	getIncomingLinks(activeFile: TFile): { source: TFile; links: string[] }[] {
 		if (!activeFile) return [];
-
 		const allFiles = app.vault.getMarkdownFiles();
 		const activeFilePath = activeFile.path;
-
 		return allFiles
 			.map((file) => {
 				const metadata = app.metadataCache.getFileCache(file);
@@ -123,6 +119,33 @@ export class CustomSidebarView extends ItemView {
 			.filter(Boolean) as { source: TFile; links: string[] }[];
 	};
 
+	getIncomingLinksv2(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
+		const allFiles = app.vault.getMarkdownFiles();
+		const activeFilePath = activeFile.path;
+		const activeFileName = activeFile.basename;
+		return allFiles
+	        .map((file) => {
+			    const metadata = app.metadataCache.getFileCache(file);
+				if (!metadata) return null;
+				const links = metadata.links?.map((link) => link.link) || [];
+            
+	            // Normalize links: Check if the link matches the active file by full path or just filename
+		        const normalizedLinks = links.map((link) =>
+			        link.endsWith('.md') ? link : link + '.md'
+				);
+
+				const isLinkingToActiveFile = normalizedLinks.includes(activeFilePath) ||
+					normalizedLinks.includes(activeFileName + '.md');
+				
+		        if (isLinkingToActiveFile) {
+			        return { filePath: file.path, baseName: file.basename, links: normalizedLinks };
+				}
+				return null;
+		})
+        .filter(Boolean) as { filePath: string; links: string[] }[];
+	}
+
+
 
 
 
@@ -140,7 +163,7 @@ export class CustomSidebarView extends ItemView {
 
 
 
-	getOutgoingLinks(activeFile: TFile): { filePath: string; links: string[] }[] {
+	getOutgoingLinks(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
 		if (!activeFile) return [];
 	
 		const metadata = app.metadataCache.getFileCache(activeFile);
@@ -172,18 +195,6 @@ export class CustomSidebarView extends ItemView {
 		// Filter out incoming links whose filePath is in the outgoingFilePaths set
 		return incomingLinks.filter(incoming => !outgoingFilePaths.has(incoming.filePath));
 	}
-
-	printLinks(activeFile: TFile){
-		if (activeFile) {
-			const incoming = this.getIncomingLinks(activeFile);
-			console.log("Incoming Links:", incoming);
-		
-			const outgoing = this.getOutgoingLinks(activeFile);
-			console.log("Outgoing Links:", outgoing);
-			const filter = this.filterIncomingLinks(incoming, outgoing);
-			console.log("filtered links: ", filter)
-		}
-	};
 
 
 
