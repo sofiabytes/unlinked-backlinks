@@ -51,7 +51,7 @@ export class CustomSidebarView extends ItemView {
 		console.log("filtered links: ", filtered)
 
 		if (filtered.length === 0) {
-			container.createEl("p", { text: "No filtered backlinks found - test." });
+			container.createEl("p", { text: "No filtered backlinks found" });
 		} else {
 			const list = container.createEl("ul");
 			filtered.forEach((file) => {
