@@ -1,7 +1,7 @@
 {
 	"id": "unlinked-backlinks-plugin",
 	"name": "Unlinked Backlinks",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "Find backlinks coming from notes not explicitly linked from the active note",
 	"author": "Sofiabytes",
