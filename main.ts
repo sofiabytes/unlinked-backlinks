@@ -17,6 +17,7 @@ export default class MyPlugin extends Plugin {
 	settings: MyPluginSettings;
 
 	async onload() {
+		console.log("TEST load function")
 		await this.loadSettings();
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
@@ -33,7 +34,7 @@ export default class MyPlugin extends Plugin {
 
 		this.registerView(
 			VIEW_TYPE_CUSTOM_SIDEBAR,
-			(leaf) => new CustomSidebarView(leaf)
+			(leaf) => new CustomSidebarView(leaf, this)
 		);
 
 //		this.app.workspace.getRightLeaf(false).setViewState({
@@ -41,19 +42,32 @@ export default class MyPlugin extends Plugin {
 //			active: true,
 //		});
 	async function activateView(app: App) {
+		console.log("TEST")
 		let leaf = app.workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SIDEBAR)[0];
+		console.log(leaf)
 
 		if (!leaf) {
 			leaf = app.workspace.getRightLeaf(false); // false means do not split
 			await leaf.setViewState({
 				type: VIEW_TYPE_CUSTOM_SIDEBAR,
-				active: false,
+				active: true,
 			});
 		}
 
 		app.workspace.revealLeaf(leaf);
 	}
 
+
+	this.app.workspace.onLayoutReady(async () => {
+		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SIDEBAR);
+		if (existing.length === 0) {
+			const leaf = this.app.workspace.getRightLeaf(false);
+			await leaf.setViewState({
+				type: VIEW_TYPE_CUSTOM_SIDEBAR,
+				active: true,
+			});
+		}
+	});
 
 
 
@@ -83,22 +97,6 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
 class SampleSettingTab extends PluginSettingTab {
 	plugin: MyPlugin;
 
@@ -124,14 +122,16 @@ class SampleSettingTab extends PluginSettingTab {
 					.map((f) => f.path);
 
 				folders.forEach((path) => {
-					dropdown.addOption(path, path);
+					if (!this.plugin.settings.selectedFolders.includes(path)){
+						dropdown.addOption(path, path);
+					}
 				});
 
 				dropdown.setValue("");
 
 				dropdown.onChange(async (value) => {
 					// Initialize if undefined
-					if (!Array.isArray(this.plugin.settings.selectedFolders)) {
+					if (value && !Array.isArray(this.plugin.settings.selectedFolders)) {
 						this.plugin.settings.selectedFolders = [];
 					}
 
