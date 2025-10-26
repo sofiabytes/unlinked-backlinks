@@ -1,10 +1,12 @@
-import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, normalizePath } from "obsidian";
+import type MyPlugin from "./main"; // import your plugin type
 
 export const VIEW_TYPE_CUSTOM_SIDEBAR = "filtered-backlinks-sidebar";
 
 export class CustomSidebarView extends ItemView {
-	constructor(leaf: WorkspaceLeaf) {
+	constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
 		super(leaf);
+		this.plugin = plugin;
 	}
 
 	getViewType(): string {
@@ -26,6 +28,42 @@ export class CustomSidebarView extends ItemView {
 		);
 	}
 
+	checkFileInSettings(activeFile: TFile){
+		
+
+		const folderPaths = this.plugin.settings.selectedFolders || [];
+
+		let filePath;
+		let matchingFolders;
+
+		if (activeFile) {
+			filePath = normalizePath(activeFile.path);
+
+			matchingFolders = folderPaths.filter(folder => {
+	        const folderNormalized = normalizePath(folder);
+		    return filePath === folderNormalized || filePath.startsWith(folderNormalized + "/");
+		});
+
+		console.log("Folders the file is in:", matchingFolders);
+
+		return matchingFolders;
+
+		}
+	}
+
+
+	checkPathIsSubpath(filePath: String, parentPath: String){	
+		    return filePath.startsWith(parentPath + "/");
+	}
+
+	checkPathInFolderList(path: String, folders: String[]){
+		const matchingFolders = folders.filter( f=> {
+			return this.checkPathIsSubpath(path, f)
+		});
+		console.log(matchingFolders);
+		return matchingFolders;
+	}
+
 	updateView() {
 		// Get the sidebar container and clear previous content
 		const container = this.containerEl.children[1];
@@ -37,6 +75,11 @@ export class CustomSidebarView extends ItemView {
 			container.createEl("p", { text: "No active note selected." });
 			return;
 		}
+		console.log(activeFile)
+
+		const matchingFolders = this.checkFileInSettings(activeFile);
+		console.log("This file is in the following folders in settings:")
+		console.log(matchingFolders)
 
 		// Display the name of the current note
 		container.createEl("h3", { text: `Backlinks for ${activeFile.basename}` });
@@ -45,8 +88,21 @@ export class CustomSidebarView extends ItemView {
 		console.log("Incoming Links:", incoming);
 		const outgoing = this.getOutgoingLinksv2(activeFile);
 		console.log("Outgoing Links:", outgoing);
-		const filtered = this.filterIncomingLinks(incoming, outgoing);
-		console.log("filtered links: ", filtered)
+		const matched = this.filterIncomingLinks(incoming, outgoing);
+		console.log("filtered links: ", matched)
+		
+		let filtered;
+		if (matchingFolders.length>0){
+		filtered = matched.filter( link => {
+			console.log("final results")
+			console.log(this.checkPathInFolderList(normalizePath(link.filePath), matchingFolders).length)
+			console.log(this.checkPathInFolderList(normalizePath(link.filePath), matchingFolders).length>0)
+			return this.checkPathInFolderList(normalizePath(link.filePath), matchingFolders).length>0
+		});
+		console.log("MATCHED", filtered);}
+		else {
+			filtered = matched;
+		}
 
 		if (filtered.length === 0) {
 			container.createEl("p", { text: "No filtered backlinks found" });
