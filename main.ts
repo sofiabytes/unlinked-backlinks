@@ -39,12 +39,12 @@ export default class MyPlugin extends Plugin {
 //			active: true,
 //		});
 	async function activateView(app: App) {
-		let leaf = app.workspace.getLeavesOfType(VIEW_TYPE_MY_TAB)[0];
+		let leaf = app.workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SIDEBAR)[0];
 
 		if (!leaf) {
 			leaf = app.workspace.getRightLeaf(false); // false means do not split
 			await leaf.setViewState({
-				type: VIEW_TYPE_MY_TAB,
+				type: VIEW_TYPE_CUSTOM_SIDEBAR,
 				active: false,
 			});
 		}
