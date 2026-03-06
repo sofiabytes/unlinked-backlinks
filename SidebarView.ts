@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, normalizePath } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, normalizePath, parseLinktext } from "obsidian";
 import type MyPlugin from "./main"; // import your plugin type
 
 export const VIEW_TYPE_CUSTOM_SIDEBAR = "filtered-backlinks-sidebar";
@@ -117,53 +117,15 @@ export class CustomSidebarView extends ItemView {
 					//href: file.filePath.replace(/\.md$/, ""),
 				});
 				link.classList.add("internal-link");
-				link.dataset.href = file.filePath.replace(/\.md$/, ""); // Required for Obsidian's internal linking
+				link.dataset.href = file.filePath; // Required for Obsidian's internal linking
 
 				link.onclick = (event) => {
 					event.preventDefault();
-					this.app.workspace.openLinkText(file.filePath.replace(/\.ms$/, ""), "", true);
+					this.app.workspace.openLinkText(file.filePath, "", true);
 				};
 			});
 		}
 	}
-
-	// Function to get backlinks and filter out ones with outgoing links
-	getFilteredBacklinks(activeFile: TFile): TFile[] {
-		const allFiles = this.app.vault.getMarkdownFiles();
-		return allFiles.filter((file) => {
-			const metadata = this.app.metadataCache.getFileCache(file);
-			const links = metadata?.links?.map((link) => link.link) || [];
-			return links;//.includes(activeFile.path);// && links.length === 1;
-		});
-	}
-
-	getIncomingLinks(activeFile: TFile): { source: TFile; links: string[] }[] {
-		if (!activeFile) return [];
-		const allFiles = app.vault.getMarkdownFiles();
-		const activeFilePath = activeFile.path;
-		return allFiles
-			.map((file) => {
-				const metadata = app.metadataCache.getFileCache(file);
-				if (!metadata) return null;
-	
-				// Get outgoing links from this file
-				const links = metadata.links?.map((link) => link.link) || [];
-
-				// Normalize paths
-				const normalizedLinks = links.map((link) =>
-					link.endsWith(".md") ? link : link + ".md"
-				);
-
-				// If this file links to the active file, return it
-				if (normalizedLinks.includes(activeFilePath)) {
-					console.log("source: ", file)
-					console.log(normalizedLinks)
-					return { filePath: file.path, baseName: file.basename, links: normalizedLinks };
-				}
-				return null;
-			})
-			.filter(Boolean) as { source: TFile; links: string[] }[];
-	};
 
 	getIncomingLinksv2(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
 		const allFiles = app.vault.getMarkdownFiles();
@@ -181,9 +143,10 @@ export class CustomSidebarView extends ItemView {
 				const allLinks = [...frontmatterLinks, ...bodyLinks];
 
 	            // Normalize links: Check if the link matches the active file by full path or just filename
-		        const normalizedLinks = allLinks.map((link) =>
-			        link.endsWith('.md') ? link : link + '.md'
-				);
+		        const normalizedLinks = allLinks.map((link) => {
+					const { path } = parseLinktext(link);
+			        return path.endsWith('.md') ? path : path + '.md';
+				});
 
 				const isLinkingToActiveFile = normalizedLinks.includes(activeFilePath) ||
 					normalizedLinks.includes(activeFileName + '.md');
@@ -193,32 +156,9 @@ export class CustomSidebarView extends ItemView {
 				}
 				return null;
 		})
-        .filter(Boolean) as { filePath: string; links: string[] }[];
+        .filter(Boolean) as { filePath: string; baseName: string; links: string[] }[];
 	}
 
-
-	getOutgoingLinks(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
-		if (!activeFile) return [];
-	
-		const metadata = app.metadataCache.getFileCache(activeFile);
-		if (!metadata) return [];
-	
-		// Get all outgoing links from the active file
-		const links = metadata.links?.map((link) => link.link) || [];
-
-		// Normalize paths to ensure they are complete paths
-		const normalizedLinks = links.map((link) =>
-			link.endsWith(".md") ? link : link + ".md"
-		);
-	
-		// Find the full file path for each linked file
-		return normalizedLinks.map((link) => {
-			const linkedFile = app.vault.getAbstractFileByPath(link);
-			return linkedFile && linkedFile instanceof TFile
-				? { filePath: linkedFile.path.replace(/\.md$/, ""), baseName: linkedFile.basename, links: [activeFile.path] }
-				: null;
-		}).filter(Boolean) as { filePath: string; links: string[] }[];
-	}
 
 	getOutgoingLinksv2(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
 	    if (!activeFile) return [];
@@ -226,13 +166,8 @@ export class CustomSidebarView extends ItemView {
 		const metadata = app.metadataCache.getFileCache(activeFile);
 		if (!metadata) return [];
 	
-		// Get all outgoing links
-		//const links = metadata.links?.map((link) => link.link) || [];
-
 		// Get links from the frontmatter
 		const frontmatterLinks = metadata.frontmatterLinks?.map((link) => link.link) || [];
-		//console.log("metadata")
-		//console.log(metadata.frontmatterLinks)
 	
 		// Get links from the body of the file
 		const bodyLinks = metadata.links?.map((link) => link.link) || [];
@@ -242,10 +177,11 @@ export class CustomSidebarView extends ItemView {
 
 		return allLinks
 			.map((rawLink) => {
-				let fullPath = rawLink.endsWith(".md") ? rawLink : rawLink + ".md";
+				const { path } = parseLinktext(rawLink);
+				let fullPath = path.endsWith(".md") ? path : path + ".md";
 
 	            // Try to resolve relative links using Obsidian's metadataCache
-		        const linkedFile = app.metadataCache.getFirstLinkpathDest(rawLink, activeFile.path);
+		        const linkedFile = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
 	
 		        if (linkedFile) {
 			        fullPath = linkedFile.path; // Use the correct full path
