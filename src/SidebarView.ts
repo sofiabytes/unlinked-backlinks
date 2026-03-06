@@ -4,6 +4,8 @@ import type MyPlugin from "./main"; // import your plugin type
 export const VIEW_TYPE_CUSTOM_SIDEBAR = "filtered-backlinks-sidebar";
 
 export class CustomSidebarView extends ItemView {
+	plugin: MyPlugin;
+
 	constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
 		super(leaf);
 		this.plugin = plugin;
@@ -29,17 +31,12 @@ export class CustomSidebarView extends ItemView {
 	}
 
 	checkFileInSettings(activeFile: TFile){
-		
-
 		const folderPaths = this.plugin.settings.selectedFolders || [];
 
-		let filePath;
-		let matchingFolders;
-
 		if (activeFile) {
-			filePath = normalizePath(activeFile.path);
+			const filePath = normalizePath(activeFile.path);
 
-			matchingFolders = folderPaths.filter(folder => {
+			const matchingFolders = folderPaths.filter(folder => {
 	        const folderNormalized = normalizePath(folder);
 		    return filePath === folderNormalized || filePath.startsWith(folderNormalized + "/");
 		});
@@ -49,14 +46,15 @@ export class CustomSidebarView extends ItemView {
 		return matchingFolders;
 
 		}
+		return [];
 	}
 
 
-	checkPathIsSubpath(filePath: String, parentPath: String){	
+	checkPathIsSubpath(filePath: string, parentPath: string){	
 		    return filePath.startsWith(parentPath + "/");
 	}
 
-	checkPathInFolderList(path: String, folders: String[]){
+	checkPathInFolderList(path: string, folders: string[]){
 		const matchingFolders = folders.filter( f=> {
 			return this.checkPathIsSubpath(path, f)
 		});
@@ -77,7 +75,7 @@ export class CustomSidebarView extends ItemView {
 		}
 		console.log(activeFile)
 
-		const matchingFolders = this.checkFileInSettings(activeFile);
+		const matchingFolders = this.checkFileInSettings(activeFile) || [];
 		console.log("This file is in the following folders in settings:")
 		console.log(matchingFolders)
 
@@ -128,22 +126,22 @@ export class CustomSidebarView extends ItemView {
 	}
 
 	getIncomingLinksv2(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
-		const allFiles = app.vault.getMarkdownFiles();
+		const allFiles = this.app.vault.getMarkdownFiles();
 		const activeFilePath = activeFile.path;
 		const activeFileName = activeFile.basename;
 		return allFiles
-	        .map((file) => {
-			    const metadata = app.metadataCache.getFileCache(file);
+	        .map((file: TFile) => {
+			    const metadata = this.app.metadataCache.getFileCache(file);
 				if (!metadata) return null;
-				const bodyLinks = metadata.links?.map((link) => link.link) || [];
+				const bodyLinks = metadata.links?.map((link: any) => link.link) || [];
 				// Get links from the frontmatter
-				const frontmatterLinks = metadata.frontmatterLinks?.map((link) => link.link) || [];
+				const frontmatterLinks = metadata.frontmatterLinks?.map((link: any) => link.link) || [];
 
 				// Combine both sets of links
 				const allLinks = [...frontmatterLinks, ...bodyLinks];
 
 	            // Normalize links: Check if the link matches the active file by full path or just filename
-		        const normalizedLinks = allLinks.map((link) => {
+		        const normalizedLinks = allLinks.map((link: string) => {
 					const { path } = parseLinktext(link);
 			        return path.endsWith('.md') ? path : path + '.md';
 				});
@@ -163,25 +161,25 @@ export class CustomSidebarView extends ItemView {
 	getOutgoingLinksv2(activeFile: TFile): { filePath: string; baseName: string; links: string[] }[] {
 	    if (!activeFile) return [];
 
-		const metadata = app.metadataCache.getFileCache(activeFile);
+		const metadata = this.app.metadataCache.getFileCache(activeFile);
 		if (!metadata) return [];
 	
 		// Get links from the frontmatter
-		const frontmatterLinks = metadata.frontmatterLinks?.map((link) => link.link) || [];
+		const frontmatterLinks = metadata.frontmatterLinks?.map((link: any) => link.link) || [];
 	
 		// Get links from the body of the file
-		const bodyLinks = metadata.links?.map((link) => link.link) || [];
+		const bodyLinks = metadata.links?.map((link: any) => link.link) || [];
 
 		// Combine both sets of links
 		const allLinks = [...frontmatterLinks, ...bodyLinks];
 
 		return allLinks
-			.map((rawLink) => {
+			.map((rawLink: string) => {
 				const { path } = parseLinktext(rawLink);
 				let fullPath = path.endsWith(".md") ? path : path + ".md";
 
 	            // Try to resolve relative links using Obsidian's metadataCache
-		        const linkedFile = app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
+		        const linkedFile = this.app.metadataCache.getFirstLinkpathDest(path, activeFile.path);
 	
 		        if (linkedFile) {
 			        fullPath = linkedFile.path; // Use the correct full path

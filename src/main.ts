@@ -37,51 +37,37 @@ export default class MyPlugin extends Plugin {
 			(leaf) => new CustomSidebarView(leaf, this)
 		);
 
-//		this.app.workspace.getRightLeaf(false).setViewState({
-//			type: VIEW_TYPE_CUSTOM_SIDEBAR,
-//			active: true,
-//		});
-	async function activateView(app: App) {
-		console.log("TEST")
-		let leaf = app.workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SIDEBAR)[0];
-		console.log(leaf)
-
-		if (!leaf) {
-			leaf = app.workspace.getRightLeaf(false); // false means do not split
-			await leaf.setViewState({
-				type: VIEW_TYPE_CUSTOM_SIDEBAR,
-				active: true,
-			});
-		}
-
-		app.workspace.revealLeaf(leaf);
+		this.app.workspace.onLayoutReady(async () => {
+			const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SIDEBAR);
+			if (existing.length === 0) {
+				const leaf = this.app.workspace.getRightLeaf(false);
+				if (leaf) {
+					await leaf.setViewState({
+						type: VIEW_TYPE_CUSTOM_SIDEBAR,
+						active: true,
+					});
+				}
+			}
+		});
 	}
 
+	async activateView() {
+		let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SIDEBAR)[0];
 
-	this.app.workspace.onLayoutReady(async () => {
-		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_CUSTOM_SIDEBAR);
-		if (existing.length === 0) {
-			const leaf = this.app.workspace.getRightLeaf(false);
-			await leaf.setViewState({
-				type: VIEW_TYPE_CUSTOM_SIDEBAR,
-				active: true,
-			});
+		if (!leaf) {
+			const rightLeaf = this.app.workspace.getRightLeaf(false);
+			if (rightLeaf) {
+				leaf = rightLeaf;
+				await leaf.setViewState({
+					type: VIEW_TYPE_CUSTOM_SIDEBAR,
+					active: true,
+				});
+			}
 		}
-	});
 
-
-
-
-//		this.app.workspace.onLayoutReady(() => {
-//		    const leaf = this.app.workspace.getRightLeaf(false);
-//			if (leaf) {
-//				leaf.setViewState({
-//					type: VIEW_TYPE_CUSTOM_SIDEBAR,
-//					active: true
-//				});
-//			}
-//		});
-
+		if (leaf) {
+			this.app.workspace.revealLeaf(leaf);
+		}
 	}
 
 	onunload() {
