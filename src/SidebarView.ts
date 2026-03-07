@@ -136,9 +136,11 @@ export class CustomSidebarView extends ItemView {
 				const bodyLinks = metadata.links?.map((link: any) => link.link) || [];
 				// Get links from the frontmatter
 				const frontmatterLinks = metadata.frontmatterLinks?.map((link: any) => link.link) || [];
+				// Get embeds from the body of the file
+				const embeds = metadata.embeds?.map((link: any) => link.link) || [];
 
 				// Combine both sets of links
-				const allLinks = [...frontmatterLinks, ...bodyLinks];
+				const allLinks = [...frontmatterLinks, ...bodyLinks, ...embeds];
 
 	            // Normalize links: Check if the link matches the active file by full path or just filename
 		        const normalizedLinks = allLinks.map((link: string) => {
@@ -170,8 +172,11 @@ export class CustomSidebarView extends ItemView {
 		// Get links from the body of the file
 		const bodyLinks = metadata.links?.map((link: any) => link.link) || [];
 
+		// Get embeds from the body of the file
+		const embeds = metadata.embeds?.map((link: any) => link.link) || [];
+
 		// Combine both sets of links
-		const allLinks = [...frontmatterLinks, ...bodyLinks];
+		const allLinks = [...frontmatterLinks, ...bodyLinks, ...embeds];
 
 		return allLinks
 			.map((rawLink: string) => {
