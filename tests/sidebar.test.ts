@@ -72,4 +72,36 @@ describe('CustomSidebarView Logic', () => {
             expect(view.checkPathInFolderList('C/note.md', folders)).toEqual([]);
         });
     });
+
+    describe('getIncomingLinksv2', () => {
+        it('should include links from embeds', () => {
+            const activeFile = { path: 'Target.md', basename: 'Target' } as any;
+            const mockFile = { path: 'Source.md', basename: 'Source' } as any;
+
+            mockApp.vault.getMarkdownFiles = vi.fn().mockReturnValue([mockFile]);
+            mockApp.metadataCache.getFileCache = vi.fn().mockReturnValue({
+                embeds: [{ link: 'Target' }]
+            });
+
+            const result = view.getIncomingLinksv2(activeFile);
+            expect(result).toHaveLength(1);
+            expect(result[0].filePath).toBe('Source');
+        });
+    });
+
+    describe('getOutgoingLinksv2', () => {
+        it('should include links from embeds', () => {
+            const activeFile = { path: 'Source.md', basename: 'Source' } as any;
+            const linkedFile = { path: 'Target.md', basename: 'Target' } as any;
+
+            mockApp.metadataCache.getFileCache = vi.fn().mockReturnValue({
+                embeds: [{ link: 'Target' }]
+            });
+            mockApp.metadataCache.getFirstLinkpathDest = vi.fn().mockReturnValue(linkedFile);
+
+            const result = view.getOutgoingLinksv2(activeFile);
+            expect(result).toHaveLength(1);
+            expect(result[0].filePath).toBe('Target');
+        });
+    });
 });
